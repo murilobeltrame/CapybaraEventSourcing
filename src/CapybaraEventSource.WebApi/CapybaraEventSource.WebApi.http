@@ -1,0 +1,6 @@
+@CapybaraEventSource.WebApi_HostAddress = http://localhost:5194
+
+GET {{CapybaraEventSource.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
