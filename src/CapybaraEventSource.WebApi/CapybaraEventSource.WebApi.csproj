@@ -10,4 +10,9 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\env\CapybaraEventSourcing.SeriveDefaults\CapybaraEventSourcing.SeriveDefaults.csproj" />
+    <ProjectReference Include="..\CapybaraEventSource.Domain\CapybaraEventSource.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
