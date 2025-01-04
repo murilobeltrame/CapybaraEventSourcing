@@ -1,0 +1,80 @@
+@villageId=f18ec5b0-faec-45e0-a1e3-1748e5af131a
+
+### Numa vila distante ...
+
+POST {{url}}/village/
+Content-Type: application/json
+
+{ "id": "{{villageId}}" }
+
+### Chegou a capivara Cleo para se juntar a vila
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Cleo"
+}
+
+### Veio também a capivara Mona trazendo cenoura
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Mona",
+  "food": "cenoura"
+}
+
+### E a capivara Lila, que é vegetariana
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Lila",
+  "food": "melão"
+}
+
+### Mas logo a Lila foi embora
+
+DELETE {{url}}/village/{{villageId}}/capybaras/Lila
+
+### Então nossa vila ficou assim
+
+GET {{url}}/village/{{villageId}}
+
+### Parte 2
+
+### O Tico chegou na vila
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Tico"
+}
+
+### E o tico comeu a cenoura da Mona
+
+POST {{url}}/village/{{villageId}}/food
+Content-Type: application/json
+
+{
+  "capybaraName": "Tico",
+  "food": "cenoura"
+}
+
+### E a Mona comeu o Melão da Lila
+
+POST {{url}}/village/{{villageId}}/food
+Content-Type: application/json
+
+{
+  "capybaraName": "Mona",
+  "food": "melão"
+}
+
+### Daí nossa vila ficou sem comida
+
+GET {{url}}/village/{{villageId}}
