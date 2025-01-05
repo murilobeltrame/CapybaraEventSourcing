@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using JasperFx.Core.Reflection;
 
 using Marten;
+using Marten.Events;
 using Marten.Events.Aggregation;
 using Marten.Events.Daemon.Resiliency;
 using Marten.Events.Projections;
@@ -57,7 +58,8 @@ builder.Services.AddMarten(options =>
         options.Events.MetadataConfig.CorrelationIdEnabled = true;
 
         // options.Projections.Add<V1CapybaraVilleProjection>(ProjectionLifecycle.Async);
-        options.Projections.Add<V4CapybaraVilleProjection>(ProjectionLifecycle.Async); //v4
+        // options.Projections.Add<V4CapybaraVilleProjection>(ProjectionLifecycle.Async); //v4
+        options.Projections.Add<V5CapybaraVilleProjection>(ProjectionLifecycle.Async); //v5
     })
     .AddAsyncDaemon(DaemonMode.HotCold) // for v3
     .IntegrateWithWolverine() // for v6
@@ -71,14 +73,17 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 
 // app.MapGet("village/{villageId:guid}", V1Endpoints.GetVillage); // for v1
-app.MapGet("village/{villageId:guid}", V4Endpoints.GetVillage); // for v4
+// app.MapGet("village/{villageId:guid}", V4Endpoints.GetVillage); // for v4
+app.MapGet("village/{villageId:guid}", V5Endpoints.GetVillage); // for v5
 app.MapPatch("/village/{villageId:guid}:reprocess", V4Endpoints.ReprocessVillage);
 // app.MapPost("village", V1Endpoints.CapybaraVilleCreated); // for v1
 // app.MapPost("village/{villageId:guid}/capybaras", V1Endpoints.CapybaraArrived);
 // app.MapDelete("village/{villageId:guid}/capybaras/{capybaraName}", V1Endpoints.CapybaraLeft);
-// app.MapPost("village/{villageId:guid}/food", V2Endpoints.CapybaraAte);
+// app.MapPost("village/{villageId:guid}/food", V2Endpoints.CapybaraAte); // for v2
+app.MapGet("village/{villageId:guid}/food-consumption", V2Endpoints.GetFoodEvents);
+app.MapPost("village/{villageId:guid}/capybaras", V5Endpoints.CapybaraArrived); // for v5
 app.MapPost("village", V6Endpoints.CapybaraVilleCreated); // for v6
-app.MapPost("village/{villageId:guid}/capybaras", V6Endpoints.CapybaraArrived);
+// app.MapPost("village/{villageId:guid}/capybaras", V6Endpoints.CapybaraArrived);
 app.MapDelete("village/{villageId:guid}/capybaras/{capybaraName}", V6Endpoints.CapybaraLeft);
 app.MapPost("village/{villageId:guid}/food", V6Endpoints.CapybaraAte);
 
@@ -228,6 +233,19 @@ public static class WolverineOptionsExtensions
           session.Events.Append(villageId, new CapybaraAte(command.CapybaraName, command.Food));
           await session.SaveChangesAsync();
       }
+      
+      // Quem comeu toda a comida?
+      // Lista os eventos de comida consumida.
+        public static async Task<IEnumerable<CapybaraAte>> GetFoodEvents(
+            [FromServices] IDocumentStore store,
+            [FromRoute] Guid villageId)
+        {
+            await using var session = store.QuerySession();
+            var rawEvents = await session.Events.QueryAllRawEvents()
+                .Where(x => x.StreamId == villageId && x.EventTypesAre(typeof(CapybaraAte)))
+                .ToListAsync();
+            return rawEvents.Select(s => (CapybaraAte)s.Data);
+        }
   }
   
 /*
@@ -314,7 +332,76 @@ public static class WolverineOptionsExtensions
     Cléo não altera os registros antigos—ela só adiciona eventos futuros com essa nova informação.
 */
      
-     // TODO: Incluir quantidade de Frutas. 
+     public record V5CapybaraBroughtFood(string CapybaraName, string Food, uint Quantity);
+
+     public record V5CapybaraArriveCommand(string CapybaraName, string? Food, uint Quantity = 1);
+
+     public record V5CapybaraVille
+     {
+         public required Guid Id { get; init; }
+         public IImmutableList<string> Capybaras { get; init; } = ImmutableList<string>.Empty;
+         public IImmutableDictionary<string, uint> Food { get; init; } = ImmutableDictionary<string, uint>.Empty;
+
+         public static V5CapybaraVille Apply(CapybaraVilleCreated @event) => new() { Id = @event.Id };
+
+         public V5CapybaraVille Apply(CapybaraArrived @event) =>
+             this with { Capybaras = [..Capybaras, @event.CapybaraName] };
+
+         public V5CapybaraVille Apply(CapybaraLeft @event) =>
+             this with { Capybaras = [..Capybaras.Where(w => w != @event.CapybaraName)] };
+
+         public V5CapybaraVille Apply(V5CapybaraBroughtFood @event) =>
+             this with
+             {
+                 Food = Food.SetItem(
+                     @event.Food,
+                     Food.GetValueOrDefault<string, uint>(@event.Food, 0) + @event.Quantity)
+             };
+
+         public V5CapybaraVille Apply(CapybaraAte @event) =>
+             this with
+             {
+                 Food = Food.ContainsKey(@event.Food) && Food[@event.Food] > 0
+                     ? Food.SetItem(@event.Food, Food[@event.Food] - 1).Where(kv => kv.Value > 0).ToImmutableDictionary()
+                     : Food
+             };
+     }
+
+     public class V5CapybaraVilleProjection : SingleStreamProjection<V5CapybaraVille>
+     {
+         public V5CapybaraVilleProjection()
+         {
+             ProjectEvent<CapybaraVilleCreated>((_, @event) => V4CapybaraVille.Apply(@event));
+             ProjectEvent<CapybaraArrived>((ville, @event) => ville.Apply(@event));
+             ProjectEvent<CapybaraLeft>((ville, @event) => ville.Apply(@event));
+             ProjectEvent<V5CapybaraBroughtFood>((ville, @event) => ville.Apply(@event));
+             ProjectEvent<CapybaraAte>((ville, @event) => ville.Apply(@event));
+         }
+     }
+
+     public static class V5Endpoints
+     {
+         public static async Task<V5CapybaraVille?> GetVillage(
+             [FromServices] IDocumentSession session, 
+             [FromRoute] Guid villageId)
+         {
+             return await session.LoadAsync<V5CapybaraVille>(villageId);
+         }
+
+         public static async Task CapybaraArrived(
+             [FromServices] IDocumentSession session,
+             [FromRoute] Guid villageId,
+             [FromBody] V5CapybaraArriveCommand command)
+         {
+             List<object> events = [new CapybaraArrived(command.CapybaraName)];
+             if (!string.IsNullOrWhiteSpace(command.Food))
+                 events.Add(new V5CapybaraBroughtFood(command.CapybaraName, command.Food, command.Quantity));
+             
+             session.Events.Append(villageId, events);
+             await session.SaveChangesAsync();
+         }
+     }
+    
 /*
     6. Integração com Sistemas Reativos
     Agora a vila quer alertas automáticos quando um evento importante acontece—como a chegada de um caminhão de cenouras. 
@@ -338,11 +425,11 @@ public static class WolverineOptionsExtensions
              [FromServices] IDocumentSession session,
              [FromServices] IMartenOutbox outbox,
              [FromRoute] Guid villageId,
-             [FromBody] CapybaraArriveCommand command)
+             [FromBody] V5CapybaraArriveCommand command)
          {
              List<object> events = [new CapybaraArrived(command.CapybaraName)];
              if (!string.IsNullOrWhiteSpace(command.Food))
-                 events.Add(new CapybaraBroughtFood(command.CapybaraName, command.Food));
+                 events.Add(new V5CapybaraBroughtFood(command.CapybaraName, command.Food, command.Quantity));
 
              session.Events.Append(villageId, events);
              foreach (var @event in events)

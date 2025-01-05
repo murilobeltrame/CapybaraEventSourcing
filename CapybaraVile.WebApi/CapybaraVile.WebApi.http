@@ -78,3 +78,39 @@ Content-Type: application/json
 ### Daí nossa vila ficou sem comida
 
 GET {{url}}/village/{{villageId}}
+
+### Quem comeu toda a comida?
+
+GET {{url}}/village/{{villageId}}/food-consumption
+
+### Parte 5
+
+### A lila volto pra vila, mas agora com várias cenouras
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Lila",
+  "food": "cenoura",
+  "quantity": 3
+}
+
+### E a Mona resolve sair ...
+
+DELETE {{url}}/village/{{villageId}}/capybaras/Mona
+
+### ... pra buscar mais melões
+
+POST {{url}}/village/{{villageId}}/capybaras
+Content-Type: application/json
+
+{
+  "capybaraName": "Mona",
+  "food": "melão",
+  "quantity": 2
+}
+
+### Então a vila ficou abastecida
+
+GET {{url}}/village/{{villageId}}
