@@ -1,6 +1,6 @@
 # Demonstração de Event Sourcing com Capivaras
 
-## Propósito
+## :bell: Propósito
 
 Esta demonstração apresenta uma implementação de event sourcing usando uma história fictícia sobre capivaras.
 O objetivo é ilustrar como o event sourcing pode ser usado para rastrear mudanças ao longo do tempo em um sistema.
@@ -12,7 +12,7 @@ Vamos destacar as principais características, como:
 5. Flexibilidade;
 6. Integração com sistemas reativos;
 
-## A História das Capivaras
+## :ledger: A História das Capivaras
 
 ### 1. Histórico completo de mudanças;
 
@@ -47,7 +47,7 @@ Cléo não altera os registros antigos—ela apenas adiciona eventos futuros com
 Agora a vila quer alertas automáticos quando um evento importante acontecer—como a chegada de um caminhão de cenouras.
 Cléo adiciona um sino que toca sempre que ela anota algo relevante.
 
-## Executando a Aplicação
+## :computer: Executando a Aplicação
 
 Para executar a aplicação, siga estes passos:
 
@@ -56,7 +56,7 @@ dotnet build
 dotnet run --project CapybaraVille.AppHost
 ```
 
-## Dependências
+## :wrench: Dependências
 
 Esta é uma aplicação .NET Aspire. Você vai precisar de:
 * [.NET SDK 9+](https://dotnet.microsoft.com/download)
