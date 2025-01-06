@@ -2,48 +2,62 @@
 
 ## Purpose
 
-This demo showcases an event-sourcing implementation using a fictional story about a capybara. 
+This demo showcases an event-sourcing implementation using a fictional story about capybaras. 
 The purpose is to illustrate how event sourcing can be used to track changes over time in a system.
+We`re going to highlight the main features such as:
+1. Complete history of changes;
+2. Audit and compliance;
+3. Scalability and performance;
+4. Replay and debugging;
+5. Flexibility;
+6. Integration with reactive systems;
 
 ## The Capybara Story
 
-In this demo, we follow the journey of a capybara named Capy. 
-Capy goes through various events such as eating, sleeping, and exploring. 
-Each event is recorded and can be replayed to understand Capy's activities over time.
+### 1. Complete history of changes;
 
-### Code Illustration
+Cléo writes everything in a diary: who arrived, who left, and who brought food. 
+Each note is an event recorded with date and time. 
+If someone asks how the party was 3 months ago, Cléo can recount everything in minute detail.
 
-The main sections of the code that illustrate the capybara story are:
-- `Events/CapybaraEvents.cs`: Defines the events related to Capy's activities.
-- `Aggregates/CapybaraAggregate.cs`: Manages the state of Capy based on the events.
-- `Repositories/CapybaraRepository.cs`: Handles the storage and retrieval of Capy's events.
+### 2. Audit and compliance;
 
-## Component Organization
+One day, the chief capybara wants to know who ate all the carrots. 
+Cléo reviews the records and identifies the culprits (it was Capybara Carlos!). 
+No fights, just facts.
 
-```mermaid
-graph TD
-    A[CapybaraEvents] --> B[CapybaraAggregate]
-    B --> C[CapybaraRepository]
-    C --> D[EventStore]
-    D --> E[Application]
-```
+### 3. Scalability and Performance
+
+CapybaraVille grows, and Cléo starts recording events in several notebooks organized by sectors. 
+Other capybaras help with the process, noting events in parallel and synchronizing everything at the end of the day.
+
+### 4. Replay and Debugging
+
+During the fruit fair, a problem occurs: the stock disappears! 
+Cléo opens the records and replays the events to find out what went wrong.
+It was a counting error in the "Watermelon Delivery" event.
+
+### 5. Flexibility for New Requirements
+
+The village decides to start recording the quantity of fruits, something that wasn't done before. 
+Cléo doesn't alter the old records—she just adds future events with this new information.
+
+### 6. Integration with Reactive Systems
+
+Now the village wants automatic alerts when an important event happens—like the arrival of a carrot truck. 
+Cléo adds a bell that rings whenever she notes something relevant.
 
 ## Running the Application
 
 To run the application, follow these steps:
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/CapybaraEventSourcing.git
-    cd CapybaraEventSourcing
-    ```
+```sh
+dotnet build
+dotnet run --project CapybaraVille.AppHost
+```
 
-2. Build the application:
-    ```sh
-    dotnet build
-    ```
+## Dependencies
 
-3. Run the application:
-    ```sh
-    dotnet run
-    ```
+This is an .NET Aspire application. You will need:
+* [.NET SDK 9+](https://dotnet.microsoft.com/download)
+* An [Aspire compatible container runtime](https://learn.microsoft.com/dotnet/aspire/fundamentals/setup-tooling#container-runtime)
