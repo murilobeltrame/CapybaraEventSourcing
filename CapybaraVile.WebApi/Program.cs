@@ -169,17 +169,20 @@ public static class WolverineOptionsExtensions
 
  public static class V1Endpoints
  {
-     public static async Task CapybaraVilleCreated(
-         [FromServices] IDocumentStore store,
+     public static async Task<IResult> CapybaraVilleCreated(
+         [FromServices] IDocumentSession session,
          [FromBody] CapybaraVilleCreateCommand command)
      {
-         await using var session = store.LightweightSession();
          session.Events.StartStream(command.Id, new CapybaraVilleCreated(command.Id));
          await session.SaveChangesAsync();
+         
+         return Results.Created(
+             $"village/{command.Id}", 
+             await session.LoadAsync<CapybaraVille>(command.Id));
      }
      
-     public static async Task CapybaraArrived(
-         [FromServices] IDocumentStore store,
+     public static async Task<IResult> CapybaraArrived(
+         [FromServices] IDocumentSession session,
          [FromRoute] Guid villageId,
          [FromBody] CapybaraArriveCommand command)
      {
@@ -187,26 +190,27 @@ public static class WolverineOptionsExtensions
          if (!string.IsNullOrWhiteSpace(command.Food))
              events.Add(new CapybaraBroughtFood(command.CapybaraName, command.Food));
          
-         await using var session = store.LightweightSession();
          session.Events.Append(villageId, events);
          await session.SaveChangesAsync();
+
+         return Results.Ok(await session.LoadAsync<CapybaraVille>(villageId));
      }
      
-     public static async Task CapybaraLeft(
-         [FromServices] IDocumentStore store,
+     public static async Task<IResult> CapybaraLeft(
+         [FromServices] IDocumentSession session,
          [FromRoute] Guid villageId,
          string capybaraName)
      {
-         await using var session = store.LightweightSession();
          session.Events.Append(villageId, new CapybaraLeft(capybaraName));
          await session.SaveChangesAsync();
+
+         return Results.Ok(await session.LoadAsync<CapybaraVille>(villageId));
      }
      
      public static async Task<CapybaraVille?> GetVillage(
-         [FromServices] IDocumentStore store, 
+         [FromServices] IDocumentSession session, 
          [FromRoute] Guid villageId)
      {
-         await using var session = store.QuerySession();
          return await session.LoadAsync<CapybaraVille>(villageId);
      }
  }
@@ -224,23 +228,23 @@ public static class WolverineOptionsExtensions
 
   public static class V2Endpoints
   {
-      public static async Task CapybaraAte(
-          [FromServices] IDocumentStore store,
+      public static async Task<IResult> CapybaraAte(
+          [FromServices] IDocumentSession session,
           [FromRoute] Guid villageId,
           [FromBody] CapybaraEatCommand command)
       {
-          await using var session = store.LightweightSession();
           session.Events.Append(villageId, new CapybaraAte(command.CapybaraName, command.Food));
           await session.SaveChangesAsync();
+          
+          return Results.Ok(await session.LoadAsync<CapybaraVille>(villageId));
       }
       
       // Quem comeu toda a comida?
       // Lista os eventos de comida consumida.
         public static async Task<IEnumerable<CapybaraAte>> GetFoodEvents(
-            [FromServices] IDocumentStore store,
+            [FromServices] IQuerySession session,
             [FromRoute] Guid villageId)
         {
-            await using var session = store.QuerySession();
             var rawEvents = await session.Events.QueryAllRawEvents()
                 .Where(x => x.StreamId == villageId && x.EventTypesAre(typeof(CapybaraAte)))
                 .ToListAsync();
@@ -309,10 +313,9 @@ public static class WolverineOptionsExtensions
    public static class V4Endpoints
    {
        public static async Task<V4CapybaraVille?> GetVillage(
-           [FromServices] IDocumentStore store, 
+           [FromServices] IQuerySession session, 
            [FromRoute] Guid villageId)
        {
-           await using var session = store.QuerySession();
            return await session.LoadAsync<V4CapybaraVille>(villageId);
        }
 
@@ -381,14 +384,16 @@ public static class WolverineOptionsExtensions
 
      public static class V5Endpoints
      {
-         public static async Task<V5CapybaraVille?> GetVillage(
-             [FromServices] IDocumentSession session, 
+         public static async Task<IResult> GetVillage(
+             [FromServices] IDocumentSession session,
              [FromRoute] Guid villageId)
          {
-             return await session.LoadAsync<V5CapybaraVille>(villageId);
+             return await session.LoadAsync<V5CapybaraVille>(villageId) is { } village ? 
+                 Results.Ok(village) : 
+                 Results.NotFound();
          }
 
-         public static async Task CapybaraArrived(
+         public static async Task<IResult> CapybaraArrived(
              [FromServices] IDocumentSession session,
              [FromRoute] Guid villageId,
              [FromBody] V5CapybaraArriveCommand command)
@@ -399,6 +404,8 @@ public static class WolverineOptionsExtensions
              
              session.Events.Append(villageId, events);
              await session.SaveChangesAsync();
+
+             return Results.Ok(await session.LoadAsync<V5CapybaraVille>(villageId));
          }
      }
     
@@ -410,7 +417,7 @@ public static class WolverineOptionsExtensions
 
      public static class V6Endpoints
      {
-         public static async Task CapybaraVilleCreated(
+         public static async Task<IResult> CapybaraVilleCreated(
              [FromServices] IDocumentSession session,
              [FromServices] IMartenOutbox  outbox,
              [FromBody] CapybaraVilleCreateCommand command)
@@ -419,9 +426,13 @@ public static class WolverineOptionsExtensions
              session.Events.StartStream(command.Id, @event);
              await outbox.SendAsync(@event);
              await session.SaveChangesAsync();
+
+             return Results.Created(
+                 $"village/{command.Id}",
+                 await session.LoadAsync<CapybaraVille>(command.Id));
          }
 
-         public static async Task CapybaraArrived(
+         public static async Task<IResult> CapybaraArrived(
              [FromServices] IDocumentSession session,
              [FromServices] IMartenOutbox outbox,
              [FromRoute] Guid villageId,
@@ -437,9 +448,11 @@ public static class WolverineOptionsExtensions
                  await outbox.SendAsync(@event);
              }
              await session.SaveChangesAsync();
+             
+             return Results.Ok(await session.LoadAsync<V5CapybaraVille>(villageId));
          }
 
-         public static async Task CapybaraLeft(
+         public static async Task<IResult> CapybaraLeft(
              [FromServices] IDocumentSession session,
              [FromServices] IMartenOutbox outbox,
              [FromRoute] Guid villageId,
@@ -449,9 +462,11 @@ public static class WolverineOptionsExtensions
              session.Events.Append(villageId, @event);
              await outbox.SendAsync(@event); 
              await session.SaveChangesAsync();
+             
+             return Results.Ok(await session.LoadAsync<V5CapybaraVille>(villageId));
          }
          
-         public static async Task CapybaraAte(
+         public static async Task<IResult> CapybaraAte(
              [FromServices] IDocumentSession session,
              [FromServices] IMartenOutbox outbox,
              [FromRoute] Guid villageId,
@@ -461,5 +476,7 @@ public static class WolverineOptionsExtensions
              session.Events.Append(villageId, @event);
              await outbox.SendAsync(@event);
              await session.SaveChangesAsync();
+             
+             return Results.Ok(await session.LoadAsync<V5CapybaraVille>(villageId));
          }
      }
