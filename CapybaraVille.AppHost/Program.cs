@@ -10,9 +10,7 @@ var capybaraVilleDb = builder.AddAzurePostgresFlexibleServer("dbServer")
     .AddDatabase(databaseName);
 
 // v6 only
-var username = builder.AddParameter("username", secret: true);
-var password = builder.AddParameter("password", secret: true);
-var capybaraVilleBroker = builder.AddRabbitMQ("brokerServer", username, password)
+var capybaraVilleBroker = builder.AddRabbitMQ("brokerServer")
     .WithManagementPlugin();
 
 builder.AddProject<CapybaraVile_WebApi>("capybaraVilleApi")
@@ -22,4 +20,4 @@ builder.AddProject<CapybaraVile_WebApi>("capybaraVilleApi")
     .WithReference(capybaraVilleDb)
     .WaitFor(capybaraVilleDb); 
 
-builder.Build().Run();
+await builder.Build().RunAsync();
