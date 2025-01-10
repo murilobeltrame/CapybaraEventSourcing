@@ -65,6 +65,8 @@ builder.Services.AddMarten(options =>
     .IntegrateWithWolverine() // for v6
     .UseNpgsqlDataSource(); // Aspire specific configuration.
 
+builder.Services.AddTransient<Decider>(); // for v2
+
 var app = builder.Build();
 
 app.MapOpenApi();
@@ -226,14 +228,28 @@ public static class WolverineOptionsExtensions
   
   public record CapybaraEatCommand(string CapybaraName, string Food);
 
+  public class Decider(IQuerySession querySession)
+  {
+      public async Task<IEnumerable<object>> On(Guid villageId, CapybaraEatCommand command)
+      {
+          var village = await querySession.LoadAsync<CapybaraVille>(villageId);
+          if (village?.Food.Contains(command.Food) == false)
+              throw new InvalidOperationException("Food not available");
+          return [new CapybaraAte(command.CapybaraName, command.Food)];
+      }
+  }
+
   public static class V2Endpoints
   {
       public static async Task<IResult> CapybaraAte(
           [FromServices] IDocumentSession session,
+          [FromServices] Decider decide,
           [FromRoute] Guid villageId,
           [FromBody] CapybaraEatCommand command)
       {
-          session.Events.Append(villageId, new CapybaraAte(command.CapybaraName, command.Food));
+          // session.Events.Append(villageId, new CapybaraAte(command.CapybaraName, command.Food));
+          var events = await decide.On(villageId, command);
+          session.Events.Append(villageId, events);
           await session.SaveChangesAsync();
           
           return Results.Ok(await session.LoadAsync<CapybaraVille>(villageId));
