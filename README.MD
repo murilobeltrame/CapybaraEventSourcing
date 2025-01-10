@@ -1,6 +1,8 @@
 # Capybara Event Sourcing Demo
 
-## Purpose
+![CapybaraVillage](./docs/Designer.png)
+
+## :bell: Purpose
 
 This demo showcases an event-sourcing implementation using a fictional story about capybaras. 
 The purpose is to illustrate how event sourcing can be used to track changes over time in a system.
@@ -12,7 +14,7 @@ We`re going to highlight the main features such as:
 5. Flexibility;
 6. Integration with reactive systems;
 
-## The Capybara Story
+## :ledger: The Capybara Story
 
 ### 1. Complete history of changes;
 
@@ -47,7 +49,7 @@ Cléo doesn't alter the old records—she just adds future events with this new 
 Now the village wants automatic alerts when an important event happens—like the arrival of a carrot truck. 
 Cléo adds a bell that rings whenever she notes something relevant.
 
-## Running the Application
+## :computer: Running the Application
 
 To run the application, follow these steps:
 
@@ -56,7 +58,7 @@ dotnet build
 dotnet run --project CapybaraVille.AppHost
 ```
 
-## Dependencies
+## :wrench: Dependencies
 
 This is an .NET Aspire application. You will need:
 * [.NET SDK 9+](https://dotnet.microsoft.com/download)

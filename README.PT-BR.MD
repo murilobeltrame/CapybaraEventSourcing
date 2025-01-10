@@ -1,5 +1,7 @@
 # Demonstração de Event Sourcing com Capivaras
 
+![CapybaraVillage](./docs/Designer.png)
+
 ## :bell: Propósito
 
 Esta demonstração apresenta uma implementação de event sourcing usando uma história fictícia sobre capivaras.
