@@ -9,14 +9,7 @@ var capybaraVilleDb = builder.AddAzurePostgresFlexibleServer("dbServer")
         .WithPgWeb())
     .AddDatabase(databaseName);
 
-// v6 only
-var capybaraVilleBroker = builder.AddRabbitMQ("brokerServer")
-    .WithManagementPlugin();
-
 builder.AddProject<CapybaraVile_WebApi>("capybaraVilleApi")
-    .WithReplicas(3) //v3 only
-    .WithReference(capybaraVilleBroker)
-    .WaitFor(capybaraVilleBroker)// v6 only
     .WithReference(capybaraVilleDb)
     .WaitFor(capybaraVilleDb); 
 
