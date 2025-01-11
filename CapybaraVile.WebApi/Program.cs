@@ -1,6 +1,6 @@
 using System.Collections.Immutable;
 
-using Application.V4;
+using Application.V5;
 
 using Marten;
 using Marten.Events;
@@ -87,7 +87,7 @@ await app.RunAsync();
     Cléo não altera os registros antigos—ela só adiciona eventos futuros com essa nova informação.
 */
  
-namespace Application.V4
+namespace Application.V5
 {
     #region Events
 
